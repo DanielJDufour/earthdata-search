@@ -9,6 +9,7 @@ import {
   FaQuestionCircle
 } from 'react-icons/fa'
 import { Col } from 'react-bootstrap'
+import { Link } from 'react-router-dom'
 
 import Button from '../Button/Button'
 import Panels from '../Panels/Panels'
@@ -332,10 +333,50 @@ class ProjectPanels extends PureComponent {
 
       const {
         title,
-        isCSDA: collectionIsCSDA
+        isCSDA: collectionIsCSDA,
+        cloudHosted,
+        duplicateCollections = []
       } = collectionMetadata
 
-      const { [collectionId]: collectionDataQualitySummaries = [] } = dataQualitySummaries
+      let { [collectionId]: collectionDataQualitySummaries = [] } = dataQualitySummaries
+
+      const hasDataQualitySummary = collectionDataQualitySummaries.length > 0
+      const hasDuplicateCollection = duplicateCollections.length > 0
+
+      const dataQualityHeader = (() => {
+        if (hasDataQualitySummary && hasDuplicateCollection) {
+          return 'Important data quality and availability information'
+        }
+        if (hasDataQualitySummary) {
+          return 'Important data quality information'
+        }
+        if (hasDuplicateCollection) {
+          return 'Important data availability information'
+        }
+        return ''
+      })()
+
+      if (hasDuplicateCollection) {
+        const duplicateCollectionId = duplicateCollections[0]
+        collectionDataQualitySummaries = [...collectionDataQualitySummaries, {
+          id: 'duplicate-collection',
+          summary: cloudHosted
+            ? (
+              <>
+                <span>This dataset is hosted in the cloud. The dataset is also </span>
+                <Link to={`/search?q=${duplicateCollectionId}`}>hosted in a NASA datacenter</Link>
+                <span>, and may have different services available.</span>
+              </>
+            )
+            : (
+              <>
+                <span>This dataset is hosted inside a NASA datacenter. The dataset is also </span>
+                <Link to={`/search?q=${duplicateCollectionId}`}>hosted in the Earthdata Cloud</Link>
+                <span>, and may have different services available.</span>
+              </>
+            )
+        }]
+      }
 
       const { valid: isValid } = isAccessMethodValid(projectCollection, collectionMetadata)
 
@@ -476,7 +517,12 @@ class ProjectPanels extends PureComponent {
           footer={editOptionsFooter}
         >
           <PanelItem
-            header={<DataQualitySummary dataQualitySummaries={collectionDataQualitySummaries} />}
+            header={(
+              <DataQualitySummary
+                dataQualitySummaries={collectionDataQualitySummaries}
+                dataQualityHeader={dataQualityHeader}
+              />
+            )}
           >
             <AccessMethod
               accessMethods={accessMethods}
